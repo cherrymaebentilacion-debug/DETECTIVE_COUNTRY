@@ -1,0 +1,991 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🕵️ COUNTRY DETECTIVE 🌎</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700;800&display=swap');
+
+    body {
+      font-family: 'Fredoka', sans-serif;
+      background: #181512;
+      color: #f3f4f6;
+      user-select: none;
+      overflow-x: hidden;
+    }
+
+    .corkboard {
+      background: #28221e;
+      background-image: 
+        radial-gradient(#3a322c 15%, transparent 16%),
+        radial-gradient(#3a322c 15%, transparent 16%);
+      background-size: 32px 32px;
+      background-position: 0 0, 16px 16px;
+      border: 10px solid #52392d;
+      box-shadow: inset 0 0 60px rgba(0,0,0,0.85);
+    }
+
+    .polaroid {
+      background: #fcfaf5;
+      color: #111827;
+      box-shadow: 0 12px 24px rgba(0,0,0,0.5), 0 0 0 1px rgba(0,0,0,0.12);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .polaroid:hover:not(.disabled) {
+      transform: translateY(-5px) scale(1.02);
+      box-shadow: 0 18px 30px rgba(0,0,0,0.6);
+    }
+
+    .flip-card {
+      perspective: 1000px;
+    }
+    .flip-card-inner {
+      transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+      transform-style: preserve-3d;
+    }
+    .flip-card.solved .flip-card-inner {
+      transform: rotateY(180deg);
+    }
+    .flip-card-front, .flip-card-back {
+      backface-visibility: hidden;
+    }
+    .flip-card-back {
+      transform: rotateY(180deg);
+    }
+
+    @keyframes subtle-pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.04); }
+    }
+    .animate-subtle-pulse {
+      animation: subtle-pulse 2s infinite ease-in-out;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between p-2 md:p-4 bg-stone-950">
+
+  <!-- TOP BAR & SCOREBOARDS -->
+  <header class="bg-amber-950/95 border-4 border-amber-800 rounded-3xl p-3 shadow-2xl mb-3 flex flex-wrap items-center justify-between gap-3">
+    <div class="flex items-center gap-3">
+      <span class="text-4xl md:text-5xl">🕵️</span>
+      <div>
+        <h1 class="text-2xl md:text-3xl font-black tracking-wider text-amber-200">COUNTRY DETECTIVE</h1>
+        <p class="text-xs md:text-sm text-amber-400 font-bold" id="roundIndicator">EFL Speaking Game</p>
+      </div>
+    </div>
+
+    <!-- 4 TEAM SCORES DISPLAY -->
+    <div class="flex items-center gap-2 md:gap-4 overflow-x-auto py-1">
+      <div id="teamBox-1" class="team-box bg-stone-900 border-2 border-stone-700 rounded-2xl px-4 py-2 min-w-[110px] text-center transition-all">
+        <div class="text-xs md:text-sm font-bold text-stone-400 uppercase">Team 1</div>
+        <div class="text-3xl md:text-4xl font-black text-amber-400" id="score-1">0</div>
+        <div class="flex justify-center gap-1 mt-1">
+          <button onclick="changeScore(1, 1)" class="bg-emerald-700 hover:bg-emerald-600 text-white text-xs px-2.5 py-0.5 rounded-lg font-bold">+</button>
+          <button onclick="changeScore(1, -1)" class="bg-rose-800 hover:bg-rose-700 text-white text-xs px-2.5 py-0.5 rounded-lg font-bold">-</button>
+        </div>
+      </div>
+
+      <div id="teamBox-2" class="team-box bg-stone-900 border-2 border-stone-700 rounded-2xl px-4 py-2 min-w-[110px] text-center transition-all">
+        <div class="text-xs md:text-sm font-bold text-stone-400 uppercase">Team 2</div>
+        <div class="text-3xl md:text-4xl font-black text-amber-400" id="score-2">0</div>
+        <div class="flex justify-center gap-1 mt-1">
+          <button onclick="changeScore(2, 1)" class="bg-emerald-700 hover:bg-emerald-600 text-white text-xs px-2.5 py-0.5 rounded-lg font-bold">+</button>
+          <button onclick="changeScore(2, -1)" class="bg-rose-800 hover:bg-rose-700 text-white text-xs px-2.5 py-0.5 rounded-lg font-bold">-</button>
+        </div>
+      </div>
+
+      <div id="teamBox-3" class="team-box bg-stone-900 border-2 border-stone-700 rounded-2xl px-4 py-2 min-w-[110px] text-center transition-all">
+        <div class="text-xs md:text-sm font-bold text-stone-400 uppercase">Team 3</div>
+        <div class="text-3xl md:text-4xl font-black text-amber-400" id="score-3">0</div>
+        <div class="flex justify-center gap-1 mt-1">
+          <button onclick="changeScore(3, 1)" class="bg-emerald-700 hover:bg-emerald-600 text-white text-xs px-2.5 py-0.5 rounded-lg font-bold">+</button>
+          <button onclick="changeScore(3, -1)" class="bg-rose-800 hover:bg-rose-700 text-white text-xs px-2.5 py-0.5 rounded-lg font-bold">-</button>
+        </div>
+      </div>
+
+      <div id="teamBox-4" class="team-box bg-stone-900 border-2 border-stone-700 rounded-2xl px-4 py-2 min-w-[110px] text-center transition-all">
+        <div class="text-xs md:text-sm font-bold text-stone-400 uppercase">Team 4</div>
+        <div class="text-3xl md:text-4xl font-black text-amber-400" id="score-4">0</div>
+        <div class="flex justify-center gap-1 mt-1">
+          <button onclick="changeScore(4, 1)" class="bg-emerald-700 hover:bg-emerald-600 text-white text-xs px-2.5 py-0.5 rounded-lg font-bold">+</button>
+          <button onclick="changeScore(4, -1)" class="bg-rose-800 hover:bg-rose-700 text-white text-xs px-2.5 py-0.5 rounded-lg font-bold">-</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- AUDIO & TEACHER CONTROLS -->
+    <div class="flex items-center gap-2">
+      <button id="bgmBtn" onclick="toggleBGM()" class="bg-amber-900 hover:bg-amber-800 border-2 border-amber-600 text-amber-200 px-3 py-2 rounded-2xl text-xs md:text-sm font-bold flex items-center gap-1 shadow">
+        🎵 Music: OFF
+      </button>
+      <button id="sfxBtn" onclick="toggleSFX()" class="bg-amber-900 hover:bg-amber-800 border-2 border-amber-600 text-amber-200 px-3 py-2 rounded-2xl text-xs md:text-sm font-bold flex items-center gap-1 shadow">
+        🔊 SFX: ON
+      </button>
+      <button onclick="openTeacherModal()" class="bg-stone-800 hover:bg-stone-700 border-2 border-stone-600 text-stone-200 px-3 py-2 rounded-2xl text-xs md:text-sm font-bold flex items-center gap-1 shadow">
+        ⚙️ Controls
+      </button>
+    </div>
+  </header>
+
+  <!-- MAIN PLAY AREA -->
+  <main class="flex-1 relative">
+
+    <!-- HOME SCREEN / START MENU -->
+    <div id="introScreen" class="absolute inset-0 z-30 bg-stone-950/95 border-4 border-amber-800 rounded-3xl p-6 flex flex-col items-center justify-center text-center backdrop-blur-md">
+      <div class="max-w-2xl w-full bg-stone-900 border-4 border-amber-600/70 rounded-3xl p-8 shadow-2xl">
+        <div class="text-7xl mb-4 animate-bounce">🕵️‍♂️ 🌎</div>
+        <h2 class="text-4xl md:text-6xl font-black text-amber-300 tracking-wider mb-2">COUNTRY DETECTIVE</h2>
+        <p class="text-amber-100 text-xl md:text-2xl font-bold mb-8">Where are they from?</p>
+
+        <div class="flex flex-col sm:flex-row gap-4 justify-center">
+          <button onclick="startGame()" class="bg-amber-500 hover:bg-amber-400 text-stone-950 font-black text-2xl md:text-3xl px-8 py-5 rounded-2xl shadow-xl transition transform hover:scale-105 active:scale-95 flex items-center justify-center gap-3 border-2 border-amber-300">
+            🔎 START INVESTIGATION
+          </button>
+          <button onclick="openInstructionsModal()" class="bg-stone-800 hover:bg-stone-700 text-amber-200 font-black text-xl md:text-2xl px-6 py-5 rounded-2xl transition border-2 border-amber-700/60 flex items-center justify-center gap-2">
+            📜 HOW TO PLAY
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- CORKBOARD GAME BOARD -->
+    <div id="gameBoard" class="corkboard rounded-3xl p-4 md:p-6 min-h-[580px] flex flex-col justify-between">
+      
+      <!-- CURRENT TURN BANNER -->
+      <div class="bg-stone-900/95 border-3 border-amber-600 rounded-2xl p-3.5 mb-4 flex flex-wrap items-center justify-between gap-3 shadow-xl">
+        <div class="flex items-center gap-3">
+          <span class="text-sm font-black uppercase tracking-wider text-amber-400 bg-amber-950 px-3 py-1.5 rounded-xl border border-amber-700">Active Turn</span>
+          <span id="currentTeamDisplay" class="text-3xl md:text-4xl font-black text-amber-300">TEAM 1</span>
+        </div>
+        
+        <div id="finalRoundBanner" class="hidden bg-rose-950 border-2 border-rose-500 text-rose-200 px-4 py-1.5 rounded-xl font-black text-base animate-pulse">
+          🚨 FINAL INVESTIGATION! (2 Questions Only)
+        </div>
+
+        <!-- DETECTIVE LOG -->
+        <div class="text-sm text-stone-200 font-mono bg-stone-950 px-4 py-2 rounded-xl border border-stone-800 max-w-md truncate" id="detectiveLog">
+          🔎 Log: Select a suspect to start!
+        </div>
+      </div>
+
+      <!-- 4x3 MYSTERY CARDS GRID -->
+      <div id="suspectsGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 md:gap-5 my-auto">
+        <!-- JS Generated -->
+      </div>
+    </div>
+
+  </main>
+
+  <!-- INSTRUCTIONS / RULES MODAL -->
+  <div id="instructionsModal" class="fixed inset-0 z-50 bg-black/85 backdrop-blur-md hidden flex items-center justify-center p-4">
+    <div class="bg-stone-900 border-4 border-amber-600 rounded-3xl max-w-2xl w-full p-6 md:p-8 shadow-2xl relative max-h-[90vh] overflow-y-auto">
+      <h3 class="text-3xl md:text-4xl font-black text-amber-300 mb-4 text-center border-b border-amber-800 pb-3">
+        📜 HOW TO PLAY
+      </h3>
+
+      <div class="space-y-4 text-base md:text-lg text-stone-200">
+        <div class="bg-stone-950 p-4 rounded-2xl border border-amber-800/60">
+          <h4 class="font-bold text-amber-400 text-xl mb-1">1. Look at the Silhouette & Choose Pronoun!</h4>
+          <p class="text-stone-300">Look at the mystery figure. Choose <b class="text-yellow-300">he</b> or <b class="text-yellow-300">she</b> and ask:</p>
+          <div class="bg-amber-950/80 text-amber-200 font-mono text-center font-bold text-xl py-2 px-4 rounded-xl mt-2 border border-amber-700">
+            “Is he / she from ______?”
+          </div>
+        </div>
+
+        <div class="bg-stone-950 p-4 rounded-2xl border border-amber-800/60">
+          <h4 class="font-bold text-amber-400 text-xl mb-1">2. 3 Chances Per Turn!</h4>
+          <p class="text-stone-300">Your team gets <b class="text-rose-400">3 CHANCES</b> (● ● ●). If wrong, that country is crossed out.</p>
+        </div>
+
+        <div class="bg-stone-950 p-4 rounded-2xl border border-rose-800/80">
+          <h4 class="font-bold text-rose-400 text-xl mb-1">3. Automatic Steal with 3 Full Chances!</h4>
+          <p class="text-stone-300">If your team misses all 3 questions, the turn <b class="text-yellow-300">AUTOMATICALLY PASSES</b> to the next team for a full <b>3 CHANCES to STEAL!</b></p>
+        </div>
+
+        <div class="bg-stone-950 p-4 rounded-2xl border border-amber-600/80">
+          <h4 class="font-bold text-amber-300 text-xl mb-2">🌟 Special Surprise Cards:</h4>
+          <div class="grid grid-cols-2 gap-2 text-sm md:text-base font-bold">
+            <div class="bg-stone-900 p-2.5 rounded-xl border border-stone-800 flex items-center gap-2">
+              <span class="text-2xl">⭐</span> <span><b>DOUBLE POINTS:</b> +2 Points</span>
+            </div>
+            <div class="bg-stone-900 p-2.5 rounded-xl border border-stone-800 flex items-center gap-2">
+              <span class="text-2xl">🎁</span> <span><b>LUCKY CASE:</b> +1 Bonus</span>
+            </div>
+            <div class="bg-stone-900 p-2.5 rounded-xl border border-stone-800 flex items-center gap-2">
+              <span class="text-2xl">🔄</span> <span><b>STEAL POINT:</b> Take 1 Point</span>
+            </div>
+            <div class="bg-stone-900 p-2.5 rounded-xl border border-stone-800 flex items-center gap-2">
+              <span class="text-2xl">💣</span> <span><b>SPY TRAP:</b> Lose 1 Point</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <button onclick="closeInstructionsModal()" class="mt-6 bg-amber-500 hover:bg-amber-400 text-stone-950 font-black text-xl py-3.5 rounded-2xl w-full transition shadow-lg">
+        GOT IT! 🚀
+      </button>
+    </div>
+  </div>
+
+  <!-- INVESTIGATION MODAL -->
+  <div id="investigateModal" class="fixed inset-0 z-40 bg-black/85 backdrop-blur-md hidden flex items-center justify-center p-3">
+    <div class="bg-stone-900 border-4 border-amber-600 rounded-3xl max-w-4xl w-full p-5 md:p-7 shadow-2xl relative flex flex-col gap-4">
+      
+      <!-- MODAL HEADER -->
+      <div class="flex items-center justify-between border-b-2 border-amber-800/80 pb-3">
+        <div class="flex items-center gap-2">
+          <span class="text-3xl">🔎</span>
+          <h3 id="modalSuspectTitle" class="text-2xl md:text-3xl font-black text-amber-300">INVESTIGATE SUSPECT</h3>
+        </div>
+        <div class="flex items-center gap-2 bg-stone-950 px-4 py-1.5 rounded-xl border border-stone-800">
+          <span class="text-sm text-stone-300 font-bold uppercase">Chances:</span>
+          <div id="questionTokens" class="flex gap-1 text-2xl text-rose-500 font-black">
+            ● ● ●
+          </div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
+        
+        <!-- LEFT: MYSTERY SILHOUETTE CARD -->
+        <div class="md:col-span-5 flex flex-col items-center">
+          <div class="polaroid p-3 rounded-3xl w-full max-w-[260px] text-center">
+            <div id="modalSuspectImageContainer" class="w-full h-56 rounded-2xl overflow-hidden relative border border-stone-200 shadow-inner flex items-center justify-center">
+              <!-- JS Populated -->
+            </div>
+          </div>
+        </div>
+
+        <!-- RIGHT: ORAL PRACTICE & CHOICE BUTTONS -->
+        <div class="md:col-span-7 flex flex-col gap-4">
+          
+          <!-- HE OR SHE SELECTION -->
+          <div class="bg-stone-950 border border-amber-700/60 rounded-2xl p-3 flex items-center justify-between gap-3">
+            <div class="text-sm font-bold text-amber-400">Pronoun:</div>
+            <div class="flex gap-3 flex-1 justify-end">
+              <button id="btnChooseHe" onclick="selectGenderPronoun('he')" class="px-5 py-2 bg-stone-800 hover:bg-sky-900 border border-sky-600/70 text-sky-200 rounded-xl text-lg font-bold transition">
+                he
+              </button>
+              <button id="btnChooseShe" onclick="selectGenderPronoun('she')" class="px-5 py-2 bg-stone-800 hover:bg-pink-900 border border-pink-600/70 text-pink-200 rounded-xl text-lg font-bold transition">
+                she
+              </button>
+            </div>
+          </div>
+
+          <!-- SPEAKING PROMPT BANNER -->
+          <div class="bg-amber-950/90 border-2 border-amber-600 rounded-2xl p-3.5 text-center shadow-xl">
+            <div id="modalSpeakingPattern" class="text-2xl md:text-3xl font-black text-amber-200 font-mono">
+              “Is <span id="selectedPronounText" class="text-yellow-300 underline underline-offset-4">he / she</span> from ______?”
+            </div>
+          </div>
+
+          <!-- FEEDBACK BANNER -->
+          <div id="investigateFeedback" class="min-h-[44px] flex items-center justify-center text-center font-bold text-base md:text-lg rounded-2xl p-2 text-amber-300 bg-stone-950 border border-stone-800">
+            Choose he or she, speak out loud, then pick a country!
+          </div>
+
+          <!-- 8 COUNTRY BUTTONS GRID -->
+          <div class="grid grid-cols-4 gap-2.5" id="countryButtonsGrid">
+            <!-- JS Populated -->
+          </div>
+        </div>
+
+      </div>
+
+      <!-- MODAL FOOTER -->
+      <div class="flex justify-between items-center border-t border-amber-800/80 pt-3">
+        <button onclick="closeInvestigateModal()" class="bg-stone-800 hover:bg-stone-700 text-stone-300 font-bold px-5 py-2.5 rounded-xl text-sm border border-stone-600">
+          ⬅ Back to Board
+        </button>
+        <div class="text-xs md:text-sm text-stone-400 font-bold">Teacher taps the chosen country button.</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- AUTOMATIC STEAL MODAL -->
+  <div id="stealChanceModal" class="fixed inset-0 z-50 bg-black/90 backdrop-blur-md hidden flex items-center justify-center p-4">
+    <div class="bg-stone-900 border-4 border-rose-600 rounded-3xl max-w-lg w-full p-6 text-center shadow-2xl animate-subtle-pulse">
+      <div class="text-7xl mb-2">🚨</div>
+      <h3 class="text-3xl font-black text-rose-400 mb-2">AUTOMATIC STEAL!</h3>
+      <p class="text-stone-200 text-lg mb-4">Previous team used all chances! Turn automatically passes to:</p>
+      
+      <div class="bg-amber-950 border-2 border-amber-500 rounded-2xl p-4 mb-2">
+        <div class="text-xs text-amber-400 font-bold uppercase tracking-widest">STEALING TEAM</div>
+        <div id="stealingTeamName" class="text-4xl font-black text-amber-200 mt-1">TEAM 2</div>
+      </div>
+
+      <p class="text-emerald-400 font-bold text-sm mb-6">🎉 Your team gets 3 FULL CHANCES to steal!</p>
+
+      <button onclick="startStealTurn()" class="bg-rose-600 hover:bg-rose-500 text-white font-black text-2xl px-8 py-4 rounded-2xl shadow-xl w-full">
+        🔥 TAKE STEAL CHANCE
+      </button>
+    </div>
+  </div>
+
+  <!-- SPECIAL CARD SURPRISE MODAL -->
+  <div id="specialCardModal" class="fixed inset-0 z-50 bg-black/90 backdrop-blur-md hidden flex items-center justify-center p-4">
+    <div class="bg-stone-900 border-4 border-amber-500 rounded-3xl max-w-md w-full p-6 text-center shadow-2xl">
+      <div id="specialIcon" class="text-8xl mb-2">⭐</div>
+      <h3 id="specialTitle" class="text-3xl font-black text-amber-300 mb-2">DOUBLE POINTS!</h3>
+      <p id="specialDesc" class="text-stone-200 text-lg mb-6">Your team earns extra points!</p>
+      
+      <div id="stealTeamSelector" class="hidden my-4 bg-stone-950 p-4 rounded-2xl border border-stone-800">
+        <div class="text-sm font-bold text-amber-400 mb-3">CHOOSE A TEAM TO STEAL 1 POINT FROM:</div>
+        <div class="grid grid-cols-2 gap-2" id="stealTeamButtons"></div>
+      </div>
+
+      <button onclick="closeSpecialModal()" class="bg-amber-500 hover:bg-amber-400 text-stone-950 font-black text-2xl px-6 py-3.5 rounded-2xl shadow-lg w-full">
+        CONTINUE 🚀
+      </button>
+    </div>
+  </div>
+
+  <!-- TEACHER CONTROLS MODAL -->
+  <div id="teacherModal" class="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-stone-900 border-4 border-slate-600 rounded-3xl max-w-md w-full p-6 shadow-2xl">
+      <h3 class="text-2xl font-black text-slate-200 mb-4 flex items-center gap-2">
+        ⚙️ Teacher Controls
+      </h3>
+
+      <div class="space-y-4">
+        <div>
+          <label class="text-xs font-bold text-slate-400 block mb-1">MANUALLY SET ACTIVE TEAM:</label>
+          <div class="grid grid-cols-4 gap-2">
+            <button onclick="setActiveTeam(1)" class="bg-slate-800 hover:bg-slate-700 text-white font-bold py-2.5 rounded-xl text-base border border-slate-600">T1</button>
+            <button onclick="setActiveTeam(2)" class="bg-slate-800 hover:bg-slate-700 text-white font-bold py-2.5 rounded-xl text-base border border-slate-600">T2</button>
+            <button onclick="setActiveTeam(3)" class="bg-slate-800 hover:bg-slate-700 text-white font-bold py-2.5 rounded-xl text-base border border-slate-600">T3</button>
+            <button onclick="setActiveTeam(4)" class="bg-slate-800 hover:bg-slate-700 text-white font-bold py-2.5 rounded-xl text-base border border-slate-600">T4</button>
+          </div>
+        </div>
+
+        <div class="border-t border-slate-800 pt-3 flex flex-col gap-2">
+          <button onclick="teacherRevealCurrentAnswer()" class="bg-amber-700 hover:bg-amber-600 text-white font-bold py-3 rounded-xl text-base">
+            🔓 Reveal Active Suspect Answer
+          </button>
+          <button onclick="confirmResetGame()" class="bg-rose-800 hover:bg-rose-700 text-white font-bold py-3 rounded-xl text-base">
+            🔄 Reset Entire Game
+          </button>
+        </div>
+      </div>
+
+      <button onclick="closeTeacherModal()" class="mt-6 bg-stone-800 hover:bg-stone-700 text-stone-300 font-bold py-2.5 rounded-xl w-full text-base">
+        Close
+      </button>
+    </div>
+  </div>
+
+  <!-- GAME OVER / VICTORY OVERLAY -->
+  <div id="gameCompleteModal" class="fixed inset-0 z-50 bg-black/90 backdrop-blur-md hidden flex items-center justify-center p-4">
+    <div class="bg-stone-900 border-4 border-amber-500 rounded-3xl max-w-xl w-full p-8 text-center shadow-2xl">
+      <div class="text-8xl mb-3">🏆</div>
+      <h2 class="text-4xl font-black text-amber-300 mb-2">INVESTIGATION COMPLETE!</h2>
+      <p class="text-stone-300 text-lg mb-6">All 12 mystery figures have been identified!</p>
+
+      <div id="winnerBanner" class="bg-amber-950 border-2 border-amber-400 rounded-2xl p-5 mb-6">
+        <div class="text-xs font-bold text-amber-400 uppercase tracking-widest">TOP DETECTIVES</div>
+        <div id="winnerText" class="text-4xl font-black text-amber-200 mt-1">TEAM 1 WINS!</div>
+      </div>
+
+      <div class="grid grid-cols-4 gap-2.5 mb-8" id="finalScoresGrid"></div>
+
+      <button onclick="restartGame()" class="bg-amber-500 hover:bg-amber-400 text-stone-950 font-black text-2xl px-10 py-4 rounded-2xl shadow-xl">
+        🔄 PLAY AGAIN
+      </button>
+    </div>
+  </div>
+
+  <!-- GAME ENGINE SCRIPT -->
+  <script>
+    /* EMBEDDED VECTOR FLAGS */
+    const SVG_FLAGS = {
+      Japan: `<svg viewBox="0 0 900 600" class="w-full h-full rounded shadow"><rect width="900" height="600" fill="#fff"/><circle cx="450" cy="300" r="180" fill="#bc002d"/></svg>`,
+      Taiwan: `<svg viewBox="0 0 900 600" class="w-full h-full rounded shadow"><rect width="900" height="600" fill="#fe0000"/><rect width="450" height="300" fill="#000095"/><g fill="#fff"><path d="M225,60 L240,115 L295,100 L260,145 L315,160 L260,175 L295,220 L240,205 L225,260 L210,205 L155,220 L190,175 L135,160 L190,145 L155,100 L210,115 Z"/><circle cx="225" cy="160" r="40" fill="#000095"/><circle cx="225" cy="160" r="32" fill="#fff"/></g></svg>`,
+      USA: `<svg viewBox="0 0 740 390" class="w-full h-full rounded shadow"><rect width="740" height="390" fill="#b22234"/><g fill="#fff"><rect y="30" width="740" height="30"/><rect y="90" width="740" height="30"/><rect y="150" width="740" height="30"/><rect y="210" width="740" height="30"/><rect y="270" width="740" height="30"/><rect y="330" width="740" height="30"/></g><rect width="296" height="210" fill="#3c3b6e"/></svg>`,
+      UK: `<svg viewBox="0 0 600 300" class="w-full h-full rounded shadow"><rect width="600" height="300" fill="#012169"/><path d="M0,0 L600,300 M600,0 L0,300" stroke="#fff" stroke-width="60"/><path d="M0,0 L600,300 M600,0 L0,300" stroke="#C8102E" stroke-width="20"/><path d="M300,0 V300 M0,150 H600" stroke="#fff" stroke-width="100"/><path d="M300,0 V300 M0,150 H600" stroke="#C8102E" stroke-width="60"/></svg>`,
+      Canada: `<svg viewBox="0 0 1000 500" class="w-full h-full rounded shadow"><rect width="250" height="500" fill="#ff0000"/><rect x="250" width="500" height="500" fill="#ffffff"/><rect x="750" width="250" height="500" fill="#ff0000"/><path d="M500,100 L530,200 L580,180 L550,240 L620,260 L570,300 L600,380 L520,350 L510,420 L490,420 L480,350 L400,380 L430,300 L380,260 L450,240 L420,180 L470,200 Z" fill="#ff0000"/></svg>`,
+      Australia: `<svg viewBox="0 0 1200 600" class="w-full h-full rounded shadow"><rect width="1200" height="600" fill="#00008b"/><rect width="600" height="300" fill="#012169"/><path d="M0,0 L600,300 M600,0 L0,300" stroke="#fff" stroke-width="60"/><path d="M300,0 V300 M0,150 H600" stroke="#fff" stroke-width="100"/><path d="M300,0 V300 M0,150 H600" stroke="#C8102E" stroke-width="60"/></svg>`,
+      France: `<svg viewBox="0 0 900 600" class="w-full h-full rounded shadow"><rect width="300" height="600" fill="#002395"/><rect x="300" width="300" height="600" fill="#fff"/><rect x="600" width="300" height="600" fill="#ed2939"/></svg>`,
+      India: `<svg viewBox="0 0 900 600" class="w-full h-full rounded shadow"><rect width="900" height="200" fill="#ff9933"/><rect y="200" width="900" height="200" fill="#fff"/><rect y="400" width="900" height="200" fill="#138808"/><circle cx="450" cy="300" r="80" fill="none" stroke="#000080" stroke-width="12"/></svg>`
+    };
+
+    /* FRIENDLY HEAD & SHOULDERS SILHOUETTES */
+    const SILHOUETTES = {
+      he: `<div class="w-full h-full bg-gradient-to-b from-sky-100 to-sky-200 flex items-end justify-center overflow-hidden relative">
+        <svg viewBox="0 0 300 300" class="w-full h-full text-stone-900 fill-current">
+          <!-- Short modern hair head silhouette -->
+          <path d="M 150 50 C 110 50 100 85 100 115 C 100 130 105 145 112 158 C 112 158 115 185 110 195 C 80 205 40 230 30 300 L 270 300 C 260 230 220 205 190 195 C 185 185 188 158 188 158 C 195 145 200 130 200 115 C 200 85 190 50 150 50 Z" />
+          <!-- Short messy hair spikes on top -->
+          <path d="M 110 90 Q 95 65 125 60 Q 115 45 145 45 Q 155 35 175 50 Q 190 40 195 65 Q 205 75 190 95 C 180 60 120 60 110 90 Z" />
+        </svg>
+      </div>`,
+      she: `<div class="w-full h-full bg-gradient-to-b from-pink-100 to-pink-200 flex items-end justify-center overflow-hidden relative">
+        <svg viewBox="0 0 300 300" class="w-full h-full text-stone-900 fill-current">
+          <!-- Long shoulder hair & female head silhouette -->
+          <path d="M 150 45 C 105 45 80 80 75 140 C 70 200 80 250 85 300 L 215 300 C 220 250 230 200 225 140 C 220 80 195 45 150 45 Z" />
+          <path d="M 100 210 C 80 225 50 245 40 300 L 260 300 C 250 245 220 225 200 210 C 190 195 188 160 188 160 C 195 145 198 130 198 115 C 198 85 185 55 150 55 C 115 55 102 85 102 115 C 102 130 105 145 112 160 C 112 160 110 195 100 210 Z" fill="#1c1917" />
+        </svg>
+      </div>`
+    };
+
+    const COUNTRIES = ["Japan", "Taiwan", "USA", "UK", "Canada", "Australia", "France", "India"];
+
+    /* REAL HUMAN PORTRAIT PHOTOS */
+    const PORTRAITS = [
+      { id: 1, gender: 'he', name: 'PERSON 01', url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&auto=format&fit=crop&q=80' },
+      { id: 2, gender: 'she', name: 'PERSON 02', url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&auto=format&fit=crop&q=80' },
+      { id: 3, gender: 'he', name: 'PERSON 03', url: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=300&auto=format&fit=crop&q=80' },
+      { id: 4, gender: 'she', name: 'PERSON 04', url: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=300&auto=format&fit=crop&q=80' },
+      { id: 5, gender: 'he', name: 'PERSON 05', url: 'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=300&auto=format&fit=crop&q=80' },
+      { id: 6, gender: 'she', name: 'PERSON 06', url: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=300&auto=format&fit=crop&q=80' },
+      { id: 7, gender: 'he', name: 'PERSON 07', url: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=300&auto=format&fit=crop&q=80' },
+      { id: 8, gender: 'she', name: 'PERSON 08', url: 'https://images.unsplash.com/photo-1488426862026-3ee34a7d66df?w=300&auto=format&fit=crop&q=80' },
+      { id: 9, gender: 'he', name: 'PERSON 09', url: 'https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?w=300&auto=format&fit=crop&q=80' },
+      { id: 10, gender: 'she', name: 'PERSON 10', url: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=300&auto=format&fit=crop&q=80' },
+      { id: 11, gender: 'he', name: 'PERSON 11', url: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=300&auto=format&fit=crop&q=80' },
+      { id: 12, gender: 'she', name: 'PERSON 12', url: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=300&auto=format&fit=crop&q=80' }
+    ];
+
+    const SPECIAL_TYPES = ['DOUBLE', 'LUCKY', 'STEAL', 'SPY', null, null, null, null, null, null, null, null];
+
+    /* GAME STATE ENGINE */
+    let scores = [0, 0, 0, 0];
+    let currentTeam = 1;
+    let suspects = [];
+    let activeSuspectIndex = null;
+    let currentQuestionsLeft = 3;
+    let selectedPronoun = null;
+    let isStealTurn = false;
+    let sfxEnabled = true;
+    let bgmEnabled = false;
+
+    /* SYNTHESIZED WEB AUDIO API SYSTEM */
+    let audioCtx = null;
+    let bgmInterval = null;
+
+    function initAudio() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+    }
+
+    function playSound(type) {
+      if (!sfxEnabled) return;
+      initAudio();
+      const now = audioCtx.currentTime;
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+
+      if (type === 'correct') {
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(523.25, now);
+        osc.frequency.setValueAtTime(659.25, now + 0.1);
+        osc.frequency.setValueAtTime(783.99, now + 0.2);
+        gain.gain.setValueAtTime(0.2, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+        osc.start(now);
+        osc.stop(now + 0.5);
+      } else if (type === 'wrong') {
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(180, now);
+        osc.frequency.setValueAtTime(130, now + 0.15);
+        gain.gain.setValueAtTime(0.2, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+        osc.start(now);
+        osc.stop(now + 0.4);
+      } else if (type === 'solved') {
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(440, now);
+        osc.frequency.setValueAtTime(554.37, now + 0.12);
+        osc.frequency.setValueAtTime(659.25, now + 0.24);
+        osc.frequency.setValueAtTime(880, now + 0.36);
+        gain.gain.setValueAtTime(0.25, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.7);
+        osc.start(now);
+        osc.stop(now + 0.7);
+      } else if (type === 'special') {
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(300, now);
+        osc.frequency.linearRampToValueAtTime(800, now + 0.3);
+        gain.gain.setValueAtTime(0.15, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+        osc.start(now);
+        osc.stop(now + 0.4);
+      }
+    }
+
+    function toggleBGM() {
+      initAudio();
+      bgmEnabled = !bgmEnabled;
+      const btn = document.getElementById('bgmBtn');
+      if (bgmEnabled) {
+        btn.innerText = "🎵 Music: ON";
+        btn.classList.replace('bg-amber-900', 'bg-emerald-800');
+        startBGMLoop();
+      } else {
+        btn.innerText = "🎵 Music: OFF";
+        btn.classList.replace('bg-emerald-800', 'bg-amber-900');
+        stopBGMLoop();
+      }
+    }
+
+    function startBGMLoop() {
+      stopBGMLoop();
+      let step = 0;
+      const bassline = [110, 110, 130, 110, 146, 130, 110, 98];
+      bgmInterval = setInterval(() => {
+        if (!bgmEnabled || !audioCtx) return;
+        const now = audioCtx.currentTime;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(bassline[step % bassline.length], now);
+        gain.gain.setValueAtTime(0.04, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start(now);
+        osc.stop(now + 0.25);
+        step++;
+      }, 360);
+    }
+
+    function stopBGMLoop() {
+      if (bgmInterval) {
+        clearInterval(bgmInterval);
+        bgmInterval = null;
+      }
+    }
+
+    function toggleSFX() {
+      sfxEnabled = !sfxEnabled;
+      document.getElementById('sfxBtn').innerText = sfxEnabled ? "🔊 SFX: ON" : "🔇 SFX: OFF";
+    }
+
+    /* INITIALIZATION */
+    function startGame() {
+      document.getElementById('introScreen').classList.add('hidden');
+      initAudio();
+      resetGameEngine();
+    }
+
+    function resetGameEngine() {
+      scores = [0, 0, 0, 0];
+      currentTeam = 1;
+      updateScoreboardDisplays();
+
+      let countryPool = [...COUNTRIES];
+      while (countryPool.length < 12) {
+        countryPool.push(COUNTRIES[Math.floor(Math.random() * COUNTRIES.length)]);
+      }
+      countryPool.sort(() => Math.random() - 0.5);
+
+      let shuffledSpecials = [...SPECIAL_TYPES].sort(() => Math.random() - 0.5);
+
+      suspects = PORTRAITS.map((p, idx) => ({
+        ...p,
+        country: countryPool[idx],
+        special: shuffledSpecials[idx],
+        solved: false,
+        disabledCountries: []
+      }));
+
+      logEvent("Game started. Pick a mystery card!");
+      renderGrid();
+    }
+
+    /* RENDER MYSTERY CORKBOARD GRID */
+    function renderGrid() {
+      const grid = document.getElementById('suspectsGrid');
+      grid.innerHTML = '';
+
+      const unsolved = suspects.filter(s => !s.solved).length;
+      document.getElementById('finalRoundBanner').classList.toggle('hidden', unsolved > 3);
+
+      suspects.forEach((suspect, idx) => {
+        const cardWrapper = document.createElement('div');
+        cardWrapper.className = `flip-card h-48 md:h-56 cursor-pointer ${suspect.solved ? 'solved disabled' : ''}`;
+
+        if (!suspect.solved) {
+          cardWrapper.onclick = () => openInvestigateModal(idx);
+        }
+
+        cardWrapper.innerHTML = `
+          <div class="flip-card-inner relative w-full h-full">
+            
+            <!-- UNKNOWN SHADOW SILHOUETTE (FRONT) -->
+            <div class="flip-card-front absolute inset-0 polaroid p-2.5 rounded-2xl flex flex-col items-center justify-between">
+              <div class="w-full h-36 md:h-44 rounded-xl overflow-hidden border border-stone-200 relative shadow-inner">
+                ${SILHOUETTES[suspect.gender]}
+              </div>
+              <div class="text-xs md:text-sm font-bold text-stone-600 tracking-wide my-auto">
+                #${idx + 1}
+              </div>
+            </div>
+
+            <!-- REVEALED REAL FACE (BACK) -->
+            <div class="flip-card-back absolute inset-0 polaroid p-2.5 rounded-2xl bg-amber-50 flex flex-col items-center justify-between border-2 border-emerald-600">
+              <div class="w-full h-32 md:h-36 bg-stone-200 rounded-xl overflow-hidden border border-stone-300 relative">
+                <img src="${suspect.url}" alt="${suspect.name}" class="w-full h-full object-cover">
+                <div class="absolute top-1 right-1 bg-emerald-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded shadow">
+                  SOLVED
+                </div>
+              </div>
+              <div class="w-full text-center">
+                <div class="flex items-center justify-center gap-1.5 mt-1">
+                  <div class="w-6 h-4 flex-shrink-0">${SVG_FLAGS[suspect.country]}</div>
+                  <span class="text-xs md:text-sm font-black text-emerald-800">${suspect.country}</span>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        `;
+
+        grid.appendChild(cardWrapper);
+      });
+    }
+
+    /* INVESTIGATION MODAL CONTROLS */
+    function openInvestigateModal(index) {
+      activeSuspectIndex = index;
+      const suspect = suspects[index];
+
+      const unsolvedCount = suspects.filter(s => !s.solved).length;
+      // Normal turn or steal turn always receives full chances (2 in final round, 3 in normal round)
+      currentQuestionsLeft = (unsolvedCount <= 3) ? 2 : 3;
+      selectedPronoun = null;
+
+      document.getElementById('modalSuspectTitle').innerText = `INVESTIGATE #${index + 1}`;
+      document.getElementById('modalSuspectImageContainer').innerHTML = SILHOUETTES[suspect.gender];
+
+      resetPronounButtons();
+      updateTokensDisplay();
+      resetFeedbackBanner();
+      renderCountryButtons();
+
+      document.getElementById('investigateModal').classList.remove('hidden');
+    }
+
+    function selectGenderPronoun(pronoun) {
+      selectedPronoun = pronoun;
+      const text = document.getElementById('selectedPronounText');
+      const btnHe = document.getElementById('btnChooseHe');
+      const btnShe = document.getElementById('btnChooseShe');
+
+      text.innerText = pronoun;
+
+      if (pronoun === 'he') {
+        text.className = 'text-sky-300 underline underline-offset-4';
+        btnHe.className = 'px-5 py-2 bg-sky-600 border border-sky-300 text-white rounded-xl text-lg font-bold shadow transition';
+        btnShe.className = 'px-5 py-2 bg-stone-800 border border-pink-900/50 text-stone-500 rounded-xl text-lg font-bold opacity-50 transition';
+      } else {
+        text.className = 'text-pink-300 underline underline-offset-4';
+        btnShe.className = 'px-5 py-2 bg-pink-600 border border-pink-300 text-white rounded-xl text-lg font-bold shadow transition';
+        btnHe.className = 'px-5 py-2 bg-stone-800 border border-sky-900/50 text-stone-500 rounded-xl text-lg font-bold opacity-50 transition';
+      }
+
+      playSound('special');
+    }
+
+    function resetPronounButtons() {
+      document.getElementById('selectedPronounText').innerText = 'he / she';
+      document.getElementById('selectedPronounText').className = 'text-yellow-300 underline underline-offset-4';
+      
+      const btnHe = document.getElementById('btnChooseHe');
+      const btnShe = document.getElementById('btnChooseShe');
+
+      btnHe.className = 'px-5 py-2 bg-stone-800 hover:bg-sky-900 border border-sky-600/70 text-sky-200 rounded-xl text-lg font-bold transition';
+      btnShe.className = 'px-5 py-2 bg-stone-800 hover:bg-pink-900 border border-pink-600/70 text-pink-200 rounded-xl text-lg font-bold transition';
+    }
+
+    function renderCountryButtons() {
+      const suspect = suspects[activeSuspectIndex];
+      const grid = document.getElementById('countryButtonsGrid');
+      grid.innerHTML = '';
+
+      COUNTRIES.forEach(country => {
+        const isDisabled = suspect.disabledCountries.includes(country);
+        const btn = document.createElement('button');
+
+        btn.className = `flex flex-col items-center justify-center p-2.5 rounded-2xl border-2 transition transform active:scale-95 ${
+          isDisabled 
+            ? 'bg-stone-800/40 border-stone-800 opacity-25 cursor-not-allowed line-through' 
+            : 'bg-stone-800 hover:bg-stone-700 border-amber-600/70 hover:border-amber-400 text-stone-100 shadow-md'
+        }`;
+
+        btn.disabled = isDisabled;
+        btn.onclick = () => handleCountryGuess(country);
+
+        btn.innerHTML = `
+          <div class="w-12 h-8 mb-1 flex items-center justify-center overflow-hidden">
+            ${SVG_FLAGS[country]}
+          </div>
+          <span class="text-xs md:text-sm font-bold tracking-tight">${country}</span>
+        `;
+
+        grid.appendChild(btn);
+      });
+    }
+
+    function updateTokensDisplay() {
+      let dots = '';
+      for (let i = 0; i < currentQuestionsLeft; i++) dots += '● ';
+      document.getElementById('questionTokens').innerText = dots.trim() || '❌ None';
+    }
+
+    function resetFeedbackBanner() {
+      const f = document.getElementById('investigateFeedback');
+      f.className = "min-h-[44px] flex items-center justify-center text-center font-bold text-base md:text-lg rounded-2xl p-2 text-amber-300 bg-stone-950 border border-stone-800";
+      f.innerText = "Choose he or she, speak out loud, then pick a country!";
+    }
+
+    /* ANSWER VERIFICATION MECHANIC */
+    function handleCountryGuess(guessedCountry) {
+      const suspect = suspects[activeSuspectIndex];
+      const feedback = document.getElementById('investigateFeedback');
+
+      if (!selectedPronoun) {
+        feedback.className = "min-h-[44px] flex items-center justify-center text-center font-bold text-base md:text-lg rounded-2xl p-2 bg-amber-900 text-amber-200 border-2 border-amber-500 animate-pulse";
+        feedback.innerText = "⚠️ Please choose he or she first!";
+        return;
+      }
+
+      // Check Pronoun Grammatical Correctness
+      if (selectedPronoun !== suspect.gender) {
+        playSound('wrong');
+        feedback.className = "min-h-[44px] flex items-center justify-center text-center font-bold text-base md:text-lg rounded-2xl p-2 bg-rose-900 text-rose-200 border-2 border-rose-600";
+        feedback.innerHTML = `❌ Look at the picture! Is it he or she? Try again!`;
+        return;
+      }
+
+      if (guessedCountry === suspect.country) {
+        // CORRECT GUESS
+        playSound('correct');
+        suspect.solved = true;
+
+        feedback.className = "min-h-[44px] flex items-center justify-center text-center font-black text-lg md:text-xl rounded-2xl p-2 bg-emerald-900 text-emerald-200 border-2 border-emerald-500 animate-bounce";
+        feedback.innerHTML = `✅ YES! ${suspect.gender === 'he' ? 'He' : 'She'} is from ${guessedCountry}!`;
+
+        // Unmask real face inside modal
+        document.getElementById('modalSuspectImageContainer').innerHTML = `
+          <img src="${suspect.url}" class="w-full h-full object-cover">
+        `;
+
+        logEvent(`Team ${currentTeam} solved #${activeSuspectIndex + 1} — ${suspect.country}`);
+
+        setTimeout(() => {
+          closeInvestigateModal();
+
+          if (suspect.special) {
+            handleSpecialCardReveal(suspect.special);
+          } else {
+            playSound('solved');
+            addScore(currentTeam, 1);
+            advanceTurn();
+          }
+
+          renderGrid();
+          checkGameCompletion();
+        }, 1500);
+
+      } else {
+        // WRONG GUESS
+        playSound('wrong');
+        suspect.disabledCountries.push(guessedCountry);
+        currentQuestionsLeft--;
+
+        feedback.className = "min-h-[44px] flex items-center justify-center text-center font-bold text-base md:text-lg rounded-2xl p-2 bg-rose-900 text-rose-200 border-2 border-rose-600";
+        feedback.innerHTML = `❌ No, ${suspect.gender === 'he' ? 'he' : 'she'} is not from ${guessedCountry}. Try again!`;
+
+        updateTokensDisplay();
+        renderCountryButtons();
+
+        if (currentQuestionsLeft <= 0) {
+          setTimeout(() => {
+            closeInvestigateModal();
+            triggerAutomaticSteal();
+          }, 1200);
+        }
+      }
+    }
+
+    /* AUTOMATIC STEAL TRIGGER WITH ALL 3 CHANCES */
+    function triggerAutomaticSteal() {
+      const nextTeam = (currentTeam % 4) + 1;
+      document.getElementById('stealingTeamName').innerText = `TEAM ${nextTeam}`;
+      document.getElementById('stealChanceModal').classList.remove('hidden');
+    }
+
+    function startStealTurn() {
+      document.getElementById('stealChanceModal').classList.add('hidden');
+      currentTeam = (currentTeam % 4) + 1;
+      updateScoreboardDisplays();
+      isStealTurn = true;
+      openInvestigateModal(activeSuspectIndex);
+    }
+
+    /* SPECIAL SURPRISE CARDS */
+    function handleSpecialCardReveal(type) {
+      playSound('special');
+      const modal = document.getElementById('specialCardModal');
+      const icon = document.getElementById('specialIcon');
+      const title = document.getElementById('specialTitle');
+      const desc = document.getElementById('specialDesc');
+      const stealSelector = document.getElementById('stealTeamSelector');
+
+      stealSelector.classList.add('hidden');
+
+      if (type === 'DOUBLE') {
+        icon.innerText = '⭐';
+        title.innerText = 'DOUBLE POINTS!';
+        desc.innerText = `Awesome! Team ${currentTeam} earns +2 points!`;
+        addScore(currentTeam, 2);
+      } else if (type === 'LUCKY') {
+        icon.innerText = '🎁';
+        title.innerText = 'LUCKY CASE!';
+        desc.innerText = `Bonus reward! Team ${currentTeam} gets +1 bonus point!`;
+        addScore(currentTeam, 2);
+      } else if (type === 'SPY') {
+        icon.innerText = '💣';
+        title.innerText = 'SPY TRAP!';
+        desc.innerText = `A spy intercepted! Team ${currentTeam} loses 1 point!`;
+        addScore(currentTeam, -1);
+      } else if (type === 'STEAL') {
+        icon.innerText = '🔄';
+        title.innerText = 'STEAL A POINT!';
+        desc.innerText = `Choose a team to steal 1 point from!`;
+        addScore(currentTeam, 1);
+
+        const stealGrid = document.getElementById('stealTeamButtons');
+        stealGrid.innerHTML = '';
+        for (let t = 1; t <= 4; t++) {
+          if (t !== currentTeam) {
+            const btn = document.createElement('button');
+            btn.className = "bg-amber-800 hover:bg-amber-700 text-amber-100 font-bold py-2.5 rounded-xl text-base";
+            btn.innerText = `Team ${t}`;
+            btn.onclick = () => executeStealFromTeam(t);
+            stealGrid.appendChild(btn);
+          }
+        }
+        stealSelector.classList.remove('hidden');
+      }
+
+      modal.classList.remove('hidden');
+    }
+
+    function executeStealFromTeam(targetTeam) {
+      if (scores[targetTeam - 1] > 0) {
+        addScore(targetTeam, -1);
+        addScore(currentTeam, 1);
+        logEvent(`Team ${currentTeam} stole 1 point from Team ${targetTeam}!`);
+      }
+      closeSpecialModal();
+    }
+
+    function closeSpecialModal() {
+      document.getElementById('specialCardModal').classList.add('hidden');
+      advanceTurn();
+    }
+
+    function closeInvestigateModal() {
+      document.getElementById('investigateModal').classList.add('hidden');
+    }
+
+    /* SCORE ENGINE */
+    function addScore(teamNum, amount) {
+      scores[teamNum - 1] = Math.max(0, scores[teamNum - 1] + amount);
+      updateScoreboardDisplays();
+    }
+
+    function changeScore(teamNum, delta) {
+      addScore(teamNum, delta);
+    }
+
+    function updateScoreboardDisplays() {
+      for (let i = 1; i <= 4; i++) {
+        document.getElementById(`score-${i}`).innerText = scores[i - 1];
+        const box = document.getElementById(`teamBox-${i}`);
+        if (i === currentTeam) {
+          box.className = "team-box bg-amber-900 border-2 border-amber-400 rounded-2xl px-4 py-2 min-w-[110px] text-center shadow-lg scale-105 transition-all";
+        } else {
+          box.className = "team-box bg-stone-900 border-2 border-stone-700 rounded-2xl px-4 py-2 min-w-[110px] text-center transition-all opacity-80";
+        }
+      }
+      document.getElementById('currentTeamDisplay').innerText = `TEAM ${currentTeam}`;
+    }
+
+    function advanceTurn() {
+      currentTeam = (currentTeam % 4) + 1;
+      updateScoreboardDisplays();
+    }
+
+    function logEvent(msg) {
+      document.getElementById('detectiveLog').innerText = `🔎 ${msg}`;
+    }
+
+    /* GAME COMPLETE CHECK */
+    function checkGameCompletion() {
+      if (suspects.every(s => s.solved)) {
+        setTimeout(triggerVictorySequence, 1000);
+      }
+    }
+
+    function triggerVictorySequence() {
+      playSound('solved');
+      confetti({ particleCount: 180, spread: 90, origin: { y: 0.6 } });
+
+      const maxScore = Math.max(...scores);
+      let winners = [];
+      scores.forEach((sc, idx) => { if (sc === maxScore) winners.push(`TEAM ${idx + 1}`); });
+
+      document.getElementById('winnerText').innerText = `${winners.join(' & ')} WIN! 🏆`;
+
+      const grid = document.getElementById('finalScoresGrid');
+      grid.innerHTML = '';
+      for (let i = 1; i <= 4; i++) {
+        const item = document.createElement('div');
+        item.className = "bg-stone-950 p-3.5 rounded-2xl border border-stone-800";
+        item.innerHTML = `
+          <div class="text-xs text-stone-400 font-bold">TEAM ${i}</div>
+          <div class="text-3xl font-black text-amber-300">${scores[i-1]}</div>
+        `;
+        grid.appendChild(item);
+      }
+
+      document.getElementById('gameCompleteModal').classList.remove('hidden');
+    }
+
+    function restartGame() {
+      document.getElementById('gameCompleteModal').classList.add('hidden');
+      resetGameEngine();
+    }
+
+    /* MODAL HELPERS */
+    function openInstructionsModal() { document.getElementById('instructionsModal').classList.remove('hidden'); }
+    function closeInstructionsModal() { document.getElementById('instructionsModal').classList.add('hidden'); }
+    function openTeacherModal() { document.getElementById('teacherModal').classList.remove('hidden'); }
+    function closeTeacherModal() { document.getElementById('teacherModal').classList.add('hidden'); }
+    function setActiveTeam(teamNum) { currentTeam = teamNum; updateScoreboardDisplays(); closeTeacherModal(); }
+    function teacherRevealCurrentAnswer() {
+      if (activeSuspectIndex !== null) {
+        selectedPronoun = suspects[activeSuspectIndex].gender;
+        handleCountryGuess(suspects[activeSuspectIndex].country);
+      }
+      closeTeacherModal();
+    }
+    function confirmResetGame() {
+      if (confirm("Reset the whole game? All scores will go back to 0.")) {
+        resetGameEngine();
+        closeTeacherModal();
+      }
+    }
+  </script>
+</body>
+</html>
